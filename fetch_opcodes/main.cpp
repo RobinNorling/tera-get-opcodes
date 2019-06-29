@@ -49,7 +49,7 @@ unsigned long __stdcall getOpcodes(void*) {
 
 	std::ofstream f("protocol." + std::to_string(version) + ".map", std::ios::out);
 
-	for(uint32_t i = 0; i < 0xFFFF; i++) {
+	for(uint32_t i = 0; i <= 0xFFFF; i++) {
 		std::string name(((char*(*)(uint32_t))(namingAddress))(i));
 		if(name.length() > 0) {
 			f << name << " = " << i << "\n";
