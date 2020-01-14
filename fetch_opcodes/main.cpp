@@ -18,10 +18,10 @@ uint32_t getFirstOpAddress() {
 }
 
 uint32_t getProtocolVersion() {
-	uint8_t lookFor[7] = { 0x53, 0x56, 0x57, 0x8D, 0x4D, 0xE8, 0xE8 };
+	uint8_t lookFor[9] = { 0x02, 0x7C, 0xF6, 0x55, 0x02, 0x00, 0x00, 0xA0, 0x42 };
 	for(uint32_t i = baseAddress; i < maxAddress; i++) {
-		if(memcmp(lookFor, (void*)i, 7) == 0) {
-			return *(uint32_t*)(*(uint32_t*)(i + 0x10));
+		if(memcmp(lookFor, (void*)i, 9) == 0) {
+			return *(uint32_t*)(i + 0x09);
 		}
 	}
 	return 0;
