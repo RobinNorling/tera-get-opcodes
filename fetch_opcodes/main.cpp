@@ -18,10 +18,10 @@ uint32_t getFirstOpAddress() {
 }
 
 uint32_t getProtocolVersion() {
-	uint8_t lookFor[9] = { 0x02, 0x7C, 0xF6, 0x55, 0x02, 0x00, 0x00, 0xA0, 0x42 };
+	uint8_t lookFor[13] = { 0x55, 0x02, 0x04, 0x00, 0x00, 0x00, 0x3C, 0xAB, 0x56, 0x02, 0x68, 0xAC, 0x56 };
 	for(uint32_t i = baseAddress; i < maxAddress; i++) {
-		if(memcmp(lookFor, (void*)i, 9) == 0) {
-			return *(uint32_t*)(i + 0x09);
+		if(memcmp(lookFor, (void*)i, 13) == 0) {
+			return *(uint32_t*)(i + 0x22);
 		}
 	}
 	return 0;
@@ -40,8 +40,16 @@ uint32_t getNamingAddress() {
 }
 
 unsigned long __stdcall getOpcodes(void*) {
+	uint16_t invalidTries = 0;
+	uint32_t version = 0;
+	while(!(version = getProtocolVersion())) {
+		if(++invalidTries > 10) {
+			break;
+		}
+		Sleep(500);
+	}
+
 	uint32_t namingAddress = getNamingAddress();
-	uint32_t version = getProtocolVersion();
 	if(namingAddress == 0) {
 		MessageBoxA(0, "Could not find naming address.", "Opcode DLL", 0);
 		FreeLibraryAndExitThread(thisDll, 0);
@@ -68,7 +76,7 @@ bool __stdcall DllMain(HMODULE dllModule, uint32_t dllReason, void*) {
 		MODULEINFO clientInfo;
 		if(GetModuleInformation(GetCurrentProcess(), GetModuleHandleA("TERA.exe"), &clientInfo, sizeof(clientInfo)) && clientInfo.SizeOfImage > 0) {
 			baseAddress = reinterpret_cast<uint32_t>(clientInfo.lpBaseOfDll);
-			maxAddress = baseAddress + clientInfo.SizeOfImage;
+			maxAddress = baseAddress + 0x2A00000;
 			thisDll = dllModule;
 			CreateThread(0, 0, getOpcodes, 0, 0, 0);
 		}

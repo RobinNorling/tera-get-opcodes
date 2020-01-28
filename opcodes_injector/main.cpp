@@ -1,27 +1,51 @@
 #include <windows.h>
 #include <iostream>
+#include <tlhelp32.h>
+
+unsigned long findProcessId(const std::wstring& processName) {
+	PROCESSENTRY32 processInfo;
+	processInfo.dwSize = sizeof(processInfo);
+
+	HANDLE processesSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, NULL);
+	if (processesSnapshot == INVALID_HANDLE_VALUE) {
+		return 0;
+	}
+
+	Process32First(processesSnapshot, &processInfo);
+	if (!processName.compare(processInfo.szExeFile)) {
+		CloseHandle(processesSnapshot);
+		return processInfo.th32ProcessID;
+	}
+
+	while (Process32Next(processesSnapshot, &processInfo)) {
+		if (!processName.compare(processInfo.szExeFile)) {
+			CloseHandle(processesSnapshot);
+			return processInfo.th32ProcessID;
+		}
+	}
+
+	CloseHandle(processesSnapshot);
+	return 0;
+}
 
 int main(void) {
 	std::cout << ">> Awaiting TERA client..." << std::flush;
-	
+
 	char path[MAX_PATH];
 	GetCurrentDirectoryA(MAX_PATH, path);
 	std::string dllPath = std::string(path) + "\\fetch_opcodes.dll";
 
-	HWND teraClient = FindWindowA("LaunchUnrealUWindowsClient", "TERA");
-	while(!teraClient) {
+	unsigned long PID = 0;
+	while(!PID) {
 		Sleep(100);
-		teraClient = FindWindowA("LaunchUnrealUWindowsClient", "TERA");
+		PID = findProcessId(std::wstring(L"TERA.exe"));
 	}
 
-	unsigned long PID = 0;
-	GetWindowThreadProcessId(teraClient, &PID);
-
-	if(void* client = OpenProcess(PROCESS_ALL_ACCESS, false, PID)) {
-		if(void* LoadLibA = (void*)GetProcAddress(GetModuleHandleA((char*)"kernel32.dll"), (char*)"LoadLibraryA")) {
-			if(void* allocString = (void*)VirtualAllocEx(client, NULL, dllPath.length(), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE)) {
-				if(WriteProcessMemory(client, (void*)allocString, dllPath.c_str(), dllPath.length(), NULL)) {
-					if(CreateRemoteThread(client, NULL, 0, (LPTHREAD_START_ROUTINE)LoadLibA, (void*)allocString, 0, NULL)) {
+	if (void* client = OpenProcess(PROCESS_ALL_ACCESS, false, PID)) {
+		if (void* LoadLibA = (void*)GetProcAddress(GetModuleHandleA((char*)"kernel32.dll"), (char*)"LoadLibraryA")) {
+			if (void* allocString = (void*)VirtualAllocEx(client, NULL, dllPath.length(), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE)) {
+				if (WriteProcessMemory(client, (void*)allocString, dllPath.c_str(), dllPath.length(), NULL)) {
+					if (CreateRemoteThread(client, NULL, 0, (LPTHREAD_START_ROUTINE)LoadLibA, (void*)allocString, 0, NULL)) {
 						std::cout << " Injected: " << PID << std::endl;
 						Sleep(1000);
 						return 0;
