@@ -1,3 +1,5 @@
+# NO LONGER VALID IN ANY REGION, KEPT FOR HISTORICAL PURPOSES ONLY
+
 # Get *ALL* opcodes for a specific region
 ## *WILL NOT WORK ON NA*
 
